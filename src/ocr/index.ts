@@ -1,6 +1,8 @@
 import type { EquipmentData } from "../shared/types";
 import { cropToTooltip } from "./crop";
 import { StubEngine } from "./stubEngine";
+import { TesseractEngine } from "./tesseractEngine";
+import { VisionLlmEngine } from "./visionEngine";
 import type { OcrEngine, OcrInput } from "./types";
 
 export type { OcrEngine, OcrInput } from "./types";
@@ -16,6 +18,8 @@ function register(engine: OcrEngine): void {
 }
 
 register(new StubEngine());
+register(new TesseractEngine());
+register(new VisionLlmEngine());
 
 /** Default engine id used until the user/config picks another. */
 let activeEngineId = "stub";
