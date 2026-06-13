@@ -11,7 +11,7 @@ export interface StatBreakdown {
   /** Turquoise component — the flame / bonus stat. */
   flame?: number;
   /** Gold component — star force enhancement. */
-  starforce?: number;
+  starForce?: number;
 }
 
 /** A single stat line read from an equipment tooltip. */
@@ -36,6 +36,14 @@ export interface PotentialLine {
   value?: string;
 }
 
+/** Potential tier + lines, kept separate from base stats. */
+export interface PotentialBlock {
+  /** Potential tier, e.g. "Legendary", if detected. */
+  tier?: string;
+  /** The potential lines, e.g. "INT +13%". */
+  lines: PotentialLine[];
+}
+
 /** Structured data extracted from one equipment tooltip screenshot. */
 export interface EquipmentData {
   /** Item name as read from the tooltip. */
@@ -48,14 +56,15 @@ export interface EquipmentData {
   requiredLevel?: number;
   /** Set name, e.g. "AbsoLab Set (Magician)". */
   set?: string;
-  /** False when the tooltip shows "Untradable". */
+  /** Explicitly false when the tooltip shows "Untradable"; undefined means not
+   *  detected (true is never set). */
   tradable?: boolean;
   /** Star-force count, if detected. */
   starForce?: number;
   /** Parsed base stat lines. */
   stats: StatLine[];
   /** Potential tier + lines, kept separate from base stats. */
-  potential: { tier?: string; lines: PotentialLine[] };
+  potential: PotentialBlock;
   /** Confidence 0..1 reported by the engine, if available. */
   confidence?: number;
 }

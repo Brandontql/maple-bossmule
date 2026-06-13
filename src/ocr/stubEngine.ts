@@ -24,8 +24,9 @@ export class StubEngine implements OcrEngine {
       tradable: false,
       starForce: 17,
       stats: [
-        { key: "INT", isPercent: false, breakdown: { total: 255, base: 100, flame: 90, starforce: 65 }, raw: "INT +255 (100 +90 +65)" },
-        { key: "MATT", isPercent: false, breakdown: { total: 197, base: 150, flame: 42, starforce: 5 }, raw: "Magic ATT +197 (150 +42 +5)" },
+        { key: "INT", isPercent: false, breakdown: { total: 255, base: 100, flame: 90, starForce: 65 }, raw: "INT +255 (100 +90 +65)" },
+        { key: "MATT", isPercent: false, breakdown: { total: 197, base: 150, flame: 42, starForce: 5 }, raw: "Magic ATT +197 (150 +42 +5)" },
+        { key: "ALL_STAT", isPercent: true, breakdown: { total: 5, flame: 5 }, raw: "All Stats +5% (0% +5%)" },
         { key: "UNKNOWN", isPercent: false, breakdown: { total: kb }, raw: `received ${kb}KB image` },
       ],
       potential: {

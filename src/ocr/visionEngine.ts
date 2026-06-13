@@ -18,13 +18,13 @@ const EquipmentSchema = z.object({
   stats: z
     .array(
       z.object({
-        key: z.string().describe("Normalized key: STR, DEX, INT, LUK, ALL_STAT, MAX_HP, MAX_MP, ATT, MATT, DEF, BOSS_DMG, IED, CRIT_DMG, DMG; UNKNOWN if unclear."),
+        key: z.string().describe("Normalized key: STR, DEX, INT, LUK, ALL_STAT, MAX_HP, MAX_MP, ATT, MATT, DEF, BOSS_DMG, IED, CRIT_DMG, CRIT_RATE, DMG; UNKNOWN if unclear."),
         isPercent: z.boolean().describe("true for percent lines like 'All Stats +5%'."),
         breakdown: z.object({
           total: z.number().describe("The headline total, e.g. 146."),
           base: z.number().nullable().describe("White component (base), or null."),
           flame: z.number().nullable().describe("TURQUOISE component (flame/bonus stat), or null."),
-          starforce: z.number().nullable().describe("Gold component (star force), or null."),
+          starForce: z.number().nullable().describe("Gold component (star force), or null."),
         }),
         raw: z.string().describe("The full raw stat line."),
       }),
@@ -53,7 +53,7 @@ const SYSTEM_PROMPT = `You read MapleStory equipment tooltips from a screenshot 
   - TURQUOISE / cyan number = flame (bonus stat)
   - GOLD / yellow number = star force
   Attribute each component by its color. A line may have only some components (e.g. "INT +107 (15 +92)").
-- Normalize each stat key (STR, DEX, INT, LUK, ALL_STAT, MAX_HP, MAX_MP, ATT, MATT, DEF, BOSS_DMG, IED, CRIT_DMG, DMG; UNKNOWN if unclear). Set isPercent true for % lines.
+- Normalize each stat key (STR, DEX, INT, LUK, ALL_STAT, MAX_HP, MAX_MP, ATT, MATT, DEF, BOSS_DMG, IED, CRIT_DMG, CRIT_RATE, DMG; UNKNOWN if unclear). Set isPercent true for % lines.
 - Put POTENTIAL lines (the colored lines under the Potential heading) into potential.lines, NEVER into stats. Read the potential tier.
 - Numbers matter: do not guess. If a digit is ambiguous, prefer what is most visually supported and lower your confidence.`;
 
@@ -139,7 +139,7 @@ export class VisionLlmEngine implements OcrEngine {
           total: s.breakdown.total,
           base: s.breakdown.base ?? undefined,
           flame: s.breakdown.flame ?? undefined,
-          starforce: s.breakdown.starforce ?? undefined,
+          starForce: s.breakdown.starForce ?? undefined,
         },
         raw: s.raw,
       })),
