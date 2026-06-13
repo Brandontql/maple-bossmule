@@ -17,14 +17,24 @@ export class StubEngine implements OcrEngine {
     const kb = Math.round(input.image.byteLength / 1024);
     return {
       name: "Arcane Umbra Weapon (stub)",
-      starforce: 17,
-      potentialTier: "Legendary",
+      category: "Weapon",
+      requiredJob: "Magician",
+      requiredLevel: 200,
+      set: "Arcane Umbra Set",
+      tradable: false,
+      starForce: 17,
       stats: [
-        { key: "STR", value: "+255", raw: "STR +255" },
-        { key: "ATT", value: "+197", raw: "ATT +197" },
-        { key: "BOSS_DMG", value: "35%", raw: "Boss Damage: +35%" },
-        { key: "UNKNOWN", value: `${kb}KB`, raw: `received ${kb}KB image` },
+        { key: "INT", isPercent: false, breakdown: { total: 255, base: 100, flame: 90, starforce: 65 }, raw: "INT +255 (100 +90 +65)" },
+        { key: "MATT", isPercent: false, breakdown: { total: 197, base: 150, flame: 42, starforce: 5 }, raw: "Magic ATT +197 (150 +42 +5)" },
+        { key: "UNKNOWN", isPercent: false, breakdown: { total: kb }, raw: `received ${kb}KB image` },
       ],
+      potential: {
+        tier: "Legendary",
+        lines: [
+          { raw: "INT +13%", key: "INT", value: "+13%" },
+          { raw: "Boss Damage +35%", key: "BOSS_DMG", value: "+35%" },
+        ],
+      },
       confidence: 0,
     };
   }

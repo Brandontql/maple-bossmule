@@ -83,8 +83,8 @@ function renderRoster(characters: Character[]): void {
       for (const entry of c.equipment) {
         const row = document.createElement("div");
         row.className = "equip";
-        const sf = entry.data.starforce != null ? `★${entry.data.starforce} ` : "";
-        const tier = entry.data.potentialTier ? ` [${entry.data.potentialTier}]` : "";
+        const sf = entry.data.starForce != null ? `★${entry.data.starForce} ` : "";
+        const tier = entry.data.potential.tier ? ` [${entry.data.potential.tier}]` : "";
         const statText = entry.data.stats.map((s) => s.raw).join(", ");
         row.innerHTML =
           `<b>${entry.slot}</b>: ${sf}${escapeHtml(entry.data.name)}${tier}` +
