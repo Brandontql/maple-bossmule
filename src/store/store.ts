@@ -19,7 +19,8 @@ function isValidEntry(entry: unknown): entry is EquipmentEntry {
   if (!Array.isArray(d.stats)) return false;
   const pot = d.potential as Record<string, unknown> | undefined;
   if (!pot || !Array.isArray(pot.lines)) return false;
-  return typeof e.slot === "string";
+  if (typeof e.slot !== "string") return false;
+  return typeof e.capturedAt === "string";
 }
 
 /**

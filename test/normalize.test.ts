@@ -24,6 +24,14 @@ test("normalizeStatKey recognizes Defense (the missing key)", () => {
   assert.equal(normalizeStatKey("DEF"), "DEF");
 });
 
+test("normalizeStatKey maps IED before DEF (label contains 'DEF')", () => {
+  // The in-game label is "Ignore Enemy DEF" / "Ignore Enemy Defense" — the
+  // word DEF must not win over IED.
+  assert.equal(normalizeStatKey("Ignore Enemy DEF"), "IED");
+  assert.equal(normalizeStatKey("Ignore Enemy Defense"), "IED");
+  assert.equal(normalizeStatKey("IED"), "IED");
+});
+
 test("normalizeStatKey returns UNKNOWN for unrecognized labels", () => {
   assert.equal(normalizeStatKey("Combat Power"), "UNKNOWN");
   assert.equal(normalizeStatKey(""), "UNKNOWN");
