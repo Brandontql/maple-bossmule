@@ -1,0 +1,24 @@
+{
+  "name": "maple-bossmule",
+  "version": "0.1.0",
+  "description": "OCR-based equipment tracker for MapleStory boss mules",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json && node scripts/copy-assets.js",
+    "start": "npm run build && electron .",
+    "dev": "tsc -p tsconfig.json -w",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
+  },
+  "keywords": [
+    "maplestory",
+    "ocr",
+    "electron",
+    "equipment-tracker"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "electron": "^29.0.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>Maple BossMule — Equipment Tracker</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        background: #1b1d22;
+        color: #e6e6e6;
+        padding: 20px;
+      }
+      h1 { font-size: 20px; margin: 0 0 16px; }
+      h2 { font-size: 15px; margin: 24px 0 8px; color: #9ad; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      input, select, button {
+        background: #2a2d34; color: #e6e6e6; border: 1px solid #3a3f48;
+        border-radius: 6px; padding: 6px 10px; font-size: 13px;
+      }
+      button { cursor: pointer; }
+      button:disabled { opacity: 0.4; cursor: default; }
+      #drop {
+        border: 2px dashed #3a3f48; border-radius: 10px; padding: 40px;
+        text-align: center; color: #888; margin: 12px 0; cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      #drop.over { border-color: #9ad; background: #22252c; color: #cde; }
+      pre {
+        background: #14161a; border: 1px solid #2a2d34; border-radius: 6px;
+        padding: 12px; overflow: auto; max-height: 240px; font-size: 12px;
+      }
+      .card {
+        background: #22252c; border: 1px solid #2a2d34; border-radius: 8px;
+        padding: 12px 14px; margin: 8px 0;
+      }
+      .card h3 { margin: 0 0 8px; font-size: 14px; }
+      .equip { font-size: 13px; margin: 4px 0; }
+      .muted { color: #888; }
+      #status { margin: 8px 0; font-size: 13px; color: #9ad; min-height: 18px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <h1>🍁 Maple BossMule — Equipment Tracker <span class="muted">(Phase 1)</span></h1>
+
+    <div class="row">
+      <label for="engine">OCR engine:</label>
+      <select id="engine"></select>
+    </div>
+
+    <div class="grid">
+      <div>
+        <h2>1. Capture equipment</h2>
+        <div id="drop">Drop an equipment screenshot here, or click to choose a file</div>
+        <input type="file" id="file" accept="image/*" style="display:none" />
+        <div class="row">
+          <label for="character">Character:</label>
+          <select id="character"></select>
+          <label for="slot">Slot:</label>
+          <select id="slot"></select>
+          <button id="save" disabled>Save to character</button>
+        </div>
+        <div id="status"></div>
+        <h2>Extracted (preview)</h2>
+        <pre id="result"></pre>
+      </div>
+
+      <div>
+        <h2>2. Add a boss mule</h2>
+        <div class="row">
+          <input type="text" id="charName" placeholder="Character name" />
+          <input type="text" id="charJob" placeholder="Job (optional)" />
+          <button id="addChar">Add</button>
+        </div>
+        <h2>Roster</h2>
+        <div id="roster"></div>
+      </div>
+    </div>
+
+    <script type="module" src="./renderer.js"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // The renderer runs in the browser context, loaded as a <script type="module">.
+    // It must emit native ES modules (not CommonJS) so there is no `exports`/
+    // `require` reference at runtime. Type-only imports are erased.
+    "module": "ES2020",
+    "moduleResolution": "node"
+  },
+  "include": ["src/renderer/renderer.ts"],
+  "exclude": []
+}
