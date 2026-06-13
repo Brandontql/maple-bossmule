@@ -39,13 +39,33 @@
       .card h3 { margin: 0 0 8px; font-size: 14px; }
       .equip { font-size: 13px; margin: 4px 0; }
       .muted { color: #888; }
+      table.roster { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+      table.roster th, table.roster td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #2a2d34; }
+      table.roster th { color: #9ad; font-weight: 600; }
+      table.roster td.num, table.roster th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      tr.item { cursor: pointer; }
+      tr.item:hover { background: #262a31; }
+      tr.totals td { border-top: 2px solid #3a3f48; font-weight: 600; color: #cde; }
+      .star { color: #e0a93b; }
+      .flame { color: #2ec4b6; }
+      .setbadge { font-size: 11px; color: #9ad; }
+      .detail { background: #1b1d22; }
+      .detail-inner { padding: 8px 10px; }
+      table.bd { border-collapse: collapse; font-size: 12px; margin: 4px 0; }
+      table.bd th, table.bd td { padding: 2px 10px; text-align: right; }
+      table.bd th:first-child, table.bd td:first-child { text-align: left; }
+      table.bd th { color: #888; font-weight: 500; }
+      .pot { margin-top: 6px; font-size: 12px; }
+      .pot .tier { color: #5ac85a; font-weight: 600; }
+      .struct dt { color: #9ad; font-size: 12px; margin-top: 6px; }
+      .struct dd { margin: 0 0 2px; font-size: 13px; }
       #status { margin: 8px 0; font-size: 13px; color: #9ad; min-height: 18px; }
       .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
-    <h1>🍁 Maple BossMule — Equipment Tracker <span class="muted">(Phase 1)</span></h1>
+    <h1>🍁 Maple BossMule — Equipment Tracker <span class="muted">(Phase 2)</span></h1>
 
     <div class="row">
       <label for="engine">OCR engine:</label>
