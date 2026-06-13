@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.log
 .DS_Store
+.superpowers/
+# Tesseract language data downloaded at runtime
+*.traineddata
+.test-build/
