@@ -7,6 +7,21 @@ import type {
   TrackerState,
 } from "../shared/types";
 
+/** A stored entry is valid only if its data matches the current EquipmentData
+ *  shape (stats array + potential.lines array). Older flat-shaped entries are
+ *  dropped on load so a stale tracker.json can't crash the app. */
+function isValidEntry(entry: unknown): entry is EquipmentEntry {
+  if (!entry || typeof entry !== "object") return false;
+  const e = entry as Record<string, unknown>;
+  const d = e.data as Record<string, unknown> | undefined;
+  if (!d || typeof d !== "object") return false;
+  if (typeof d.name !== "string") return false;
+  if (!Array.isArray(d.stats)) return false;
+  const pot = d.potential as Record<string, unknown> | undefined;
+  if (!pot || !Array.isArray(pot.lines)) return false;
+  return typeof e.slot === "string";
+}
+
 /**
  * Simple JSON-file-backed store. Good enough for Phase 1; swap for SQLite later
  * if history/querying grows. All writes go through save() so the file stays
@@ -25,6 +40,18 @@ export class Store {
       this.state = JSON.parse(raw) as TrackerState;
       if (!Array.isArray(this.state.characters)) {
         this.state = { characters: [] };
+      }
+      for (const c of this.state.characters) {
+        if (!Array.isArray(c.equipment)) {
+          c.equipment = [];
+          continue;
+        }
+        const before = c.equipment.length;
+        c.equipment = c.equipment.filter(isValidEntry);
+        const dropped = before - c.equipment.length;
+        if (dropped > 0) {
+          console.warn(`Store: dropped ${dropped} stale equipment entr${dropped === 1 ? "y" : "ies"} for ${c.name}`);
+        }
       }
     } catch (err: unknown) {
       // Missing file on first run is expected; anything else we surface.
