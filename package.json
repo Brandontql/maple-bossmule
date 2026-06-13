@@ -8,7 +8,7 @@
     "start": "npm run build && electron .",
     "dev": "tsc -p tsconfig.json -w",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
-    "test": "tsc -p tsconfig.test.json && node --test .test-build/test/sanity.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test \".test-build/test/**/*.test.js\""
   },
   "keywords": [
     "maplestory",
