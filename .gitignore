@@ -6,3 +6,5 @@ dist/
 # Tesseract language data downloaded at runtime
 *.traineddata
 .test-build/
+# Local sample screenshots (personal game data — kept out of the repo)
+samples/
