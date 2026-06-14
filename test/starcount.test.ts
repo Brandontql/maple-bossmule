@@ -55,3 +55,15 @@ test("countStars ignores gold below the band and specks below MIN_BLOB", () => {
   }
   assert.equal(countStars(px, w, h), undefined);
 });
+
+test("countStars rejects a too-large merged gold region (icon/background)", () => {
+  const w = 320, h = 100;
+  const px = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { px[i * 4] = 20; px[i * 4 + 1] = 20; px[i * 4 + 2] = 25; px[i * 4 + 3] = 255; }
+  // one big 40x40 gold region in the band — far above MAX_BLOB, so not a star
+  for (let dy = 0; dy < 40; dy++) for (let dx = 0; dx < 40; dx++) {
+    const idx = ((2 + dy) * w + (10 + dx)) * 4;
+    px[idx] = 230; px[idx + 1] = 190; px[idx + 2] = 60; px[idx + 3] = 255;
+  }
+  assert.equal(countStars(px, w, h), undefined);
+});

@@ -1,8 +1,9 @@
 // Counts lit star-force icons in a screenshot's top band. Pure: operates on raw
 // RGBA pixels (the renderer supplies them via canvas), so it is unit-testable.
 
-const BAND_FRACTION = 0.25; // search the top quarter of the image
-const MIN_BLOB = 6;         // ignore specks smaller than this many pixels
+const BAND_FRACTION = 0.12; // the star row sits in a thin strip at the very top
+const MIN_BLOB = 15;        // a lit star is ~30-40px; reject JPEG-noise specks
+const MAX_BLOB = 80;        // reject merged item-icon / background regions
 const MAX_STARS = 30;       // sanity cap
 
 /** True for the bright gold of a lit star (not gray unlit stars or dark bg). */
@@ -45,7 +46,7 @@ export function countStars(
       if (py > 0 && mask[p - width] === 1) { mask[p - width] = 2; stack.push(p - width); }
       if (py < bandRows - 1 && mask[p + width] === 1) { mask[p + width] = 2; stack.push(p + width); }
     }
-    if (size >= MIN_BLOB) count++;
+    if (size >= MIN_BLOB && size <= MAX_BLOB) count++;
   }
 
   if (count === 0) return undefined;

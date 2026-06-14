@@ -27,6 +27,15 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
+/** True for OCR gibberish with very few distinct letters — e.g. the star row
+ *  read as letters ("KAREE AAARE" or, after preprocessing, "Ahhh h Ahhh h").
+ *  Real item names have letter variety. */
+function looksLikeGibberish(line: string): boolean {
+  const letters = line.toLowerCase().replace(/[^a-z]/g, "");
+  if (letters.length < 8) return false;
+  return new Set(letters).size <= 4;
+}
+
 /** Parse the leading number after a stat label, e.g. "+5% (0% +5%)" -> {5,true}. */
 function parseLeadingValue(
   rest: string,
@@ -78,6 +87,7 @@ export function parseTooltipText(text: string): EquipmentData {
       (l) =>
         /[A-Za-z]/.test(l) &&
         !looksLikeStarRow(l) &&
+        !looksLikeGibberish(l) &&
         !NOISE_RE.test(l) &&
         !LEVEL_RE.test(l) &&
         !/required|untradable|set\s*effect|potential/i.test(l) &&

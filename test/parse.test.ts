@@ -67,3 +67,9 @@ test("potential lines are separated from base stats", () => {
   assert.equal(d.potential.lines.length, 3);
   assert.ok(!d.stats.some((s) => /recovery/i.test(s.raw)));
 });
+
+test("name skips low-diversity gibberish (preprocessed star row)", () => {
+  // The preprocessed star row OCRs to mixed-case gibberish with few distinct letters.
+  const input = ["Ahhh h Ahhh h Ahh hd", "AbsoLab Mage Cape", "STR +100 (100)"].join("\n");
+  assert.equal(parseTooltipText(input).name, "AbsoLab Mage Cape");
+});
