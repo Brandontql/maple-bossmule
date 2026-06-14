@@ -2,6 +2,7 @@ import type { TrackerApi } from "../shared/ipc";
 import type { Character, EquipmentData, EquipmentEntry, EquipmentSlot, StatLine } from "../shared/types";
 import { computeTotals, computeSetCounts } from "./compute.js";
 import { tierColor, potentialPercents, toNum, SLOT_LAYOUT } from "./inventory.js";
+import { countStars } from "./starcount.js";
 
 declare global {
   interface Window {
@@ -427,14 +428,60 @@ function showPending(data: EquipmentData): void {
   $<HTMLButtonElement>("save").disabled = false;
 }
 
+/** Decode an image file to its pixels and a reusable bitmap, via canvas. */
+async function decodeImage(
+  file: File,
+): Promise<{ pixels: Uint8ClampedArray; width: number; height: number; bitmap: ImageBitmap }> {
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
+  ctx.drawImage(bitmap, 0, 0);
+  const img = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+  return { pixels: img.data, width: bitmap.width, height: bitmap.height, bitmap };
+}
+
+/** Upscaled, grayscaled, high-contrast, inverted PNG (base64) for Tesseract. */
+function preprocessedBase64(bitmap: ImageBitmap): string {
+  const scale = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width * scale;
+  canvas.height = bitmap.height * scale;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
+  ctx.filter = "grayscale(1) contrast(160%) invert(1)";
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/png").split(",")[1];
+}
+
 async function handleFile(file: File): Promise<void> {
-  const buf = await file.arrayBuffer();
-  const imageBase64 = arrayBufferToBase64(buf);
-  setStatus("Extracting…");
+  setStatus("Reading image…");
   try {
-    const data = await window.api.extract({ imageBase64, mimeType: file.type });
+    const { pixels, width, height, bitmap } = await decodeImage(file);
+    const stars = countStars(pixels, width, height);
+
+    const engine = $<HTMLSelectElement>("engine").value;
+    let imageBase64: string;
+    let mimeType: string;
+    if (engine === "vision-llm") {
+      const buf = await file.arrayBuffer();
+      imageBase64 = arrayBufferToBase64(buf);
+      mimeType = file.type || "image/png";
+    } else {
+      imageBase64 = preprocessedBase64(bitmap);
+      mimeType = "image/png";
+    }
+
+    setStatus("Extracting…");
+    const data = await window.api.extract({ imageBase64, mimeType });
+    if (data.starForce == null && stars != null) {
+      data.starForce = stars;
+    }
     showPending(data);
-    setStatus(`Extracted from ${file.name}. Review, pick a slot, then Save.`);
+    const starNote = stars != null ? ` (counted ★${stars})` : "";
+    setStatus(`Extracted from ${file.name}${starNote}. Review, edit if needed, pick a slot, then Save.`);
   } catch (err) {
     setStatus(`Extract failed: ${(err as Error).message}`);
   }
