@@ -17,12 +17,14 @@ function register(engine: OcrEngine): void {
   engines.set(engine.id, engine);
 }
 
-register(new StubEngine());
+// Registration order is the dropdown order. A real engine is listed first and
+// is the default; the stub is a no-OCR dev placeholder, listed last.
 register(new TesseractEngine());
 register(new VisionLlmEngine());
+register(new StubEngine());
 
 /** Default engine id used until the user/config picks another. */
-let activeEngineId = "stub";
+let activeEngineId = "tesseract";
 
 export function listEngines(): { id: string; label: string }[] {
   return [...engines.values()].map((e) => ({ id: e.id, label: e.label }));
