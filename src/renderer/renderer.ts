@@ -261,33 +261,151 @@ function escapeHtml(s: string): string {
   );
 }
 
-function showPending(data: EquipmentData): void {
-  pending = data;
-  const out = $<HTMLPreElement>("result");
-  const sf = data.starForce != null ? ` · <span class="star">★${data.starForce}</span>` : "";
-  const meta = [
-    data.category,
-    data.requiredJob,
-    data.requiredLevel != null ? `Lv${data.requiredLevel}` : null,
-    data.set,
-    data.tradable === false ? "Untradable" : null,
-  ]
-    .filter(Boolean)
-    .map((m) => escapeHtml(String(m)))
-    .join(" · ");
+function textField(
+  labelText: string,
+  value: string,
+  onChange: (v: string) => void,
+): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "ef-row";
+  const span = document.createElement("span");
+  span.className = "ef-label";
+  span.textContent = labelText;
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.value = value;
+  inp.oninput = () => onChange(inp.value);
+  row.append(span, inp);
+  return row;
+}
 
-  out.innerHTML =
-    `<div class="struct">` +
-    `<div><b>${escapeHtml(data.name)}</b>${sf}</div>` +
-    (meta ? `<div class="muted">${meta}</div>` : "") +
-    `<dl>` +
-    `<dt>Stats</dt>` +
-    data.stats.map((s) => `<dd>${escapeHtml(s.raw)}</dd>`).join("") +
-    (data.potential.lines.length
-      ? `<dt>Potential${data.potential.tier ? ` — ${escapeHtml(data.potential.tier)}` : ""}</dt>` +
-        data.potential.lines.map((p) => `<dd>${escapeHtml(p.raw)}</dd>`).join("")
-      : "") +
-    `</dl></div>`;
+function numberField(
+  labelText: string,
+  value: number | undefined,
+  onChange: (v: number | undefined) => void,
+): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "ef-row";
+  const span = document.createElement("span");
+  span.className = "ef-label";
+  span.textContent = labelText;
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.value = value == null ? "" : String(value);
+  inp.oninput = () => onChange(toNum(inp.value));
+  row.append(span, inp);
+  return row;
+}
+
+function miniNum(
+  value: number | undefined,
+  placeholder: string,
+  onChange: (v: number | undefined) => void,
+): HTMLInputElement {
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.className = "ef-num";
+  inp.placeholder = placeholder;
+  inp.value = value == null ? "" : String(value);
+  inp.oninput = () => onChange(toNum(inp.value));
+  return inp;
+}
+
+function showPending(data: EquipmentData): void {
+  const p: EquipmentData = structuredClone(data);
+  pending = p;
+  const out = $<HTMLDivElement>("result");
+  out.innerHTML = "";
+
+  out.appendChild(textField("Name", p.name, (v) => (p.name = v)));
+  out.appendChild(numberField("Star Force", p.starForce, (v) => (p.starForce = v)));
+  out.appendChild(textField("Category", p.category ?? "", (v) => (p.category = v || undefined)));
+  out.appendChild(textField("Job", p.requiredJob ?? "", (v) => (p.requiredJob = v || undefined)));
+  out.appendChild(numberField("Level", p.requiredLevel, (v) => (p.requiredLevel = v)));
+  out.appendChild(textField("Set", p.set ?? "", (v) => (p.set = v || undefined)));
+
+  const tradeRow = document.createElement("label");
+  tradeRow.className = "ef-row";
+  const tradeCb = document.createElement("input");
+  tradeCb.type = "checkbox";
+  tradeCb.checked = p.tradable === false;
+  tradeCb.oninput = () => (p.tradable = tradeCb.checked ? false : undefined);
+  const tradeSpan = document.createElement("span");
+  tradeSpan.textContent = "Untradable";
+  tradeRow.append(tradeCb, tradeSpan);
+  out.appendChild(tradeRow);
+
+  const tierRow = document.createElement("label");
+  tierRow.className = "ef-row";
+  const tierSpan = document.createElement("span");
+  tierSpan.className = "ef-label";
+  tierSpan.textContent = "Potential tier";
+  const tierSel = document.createElement("select");
+  for (const t of ["", "Rare", "Epic", "Unique", "Legendary"]) {
+    const o = document.createElement("option");
+    o.value = t;
+    o.textContent = t || "(none)";
+    if ((p.potential.tier ?? "") === t) o.selected = true;
+    tierSel.appendChild(o);
+  }
+  tierSel.oninput = () => (p.potential.tier = tierSel.value || undefined);
+  tierRow.append(tierSpan, tierSel);
+  out.appendChild(tierRow);
+
+  const statHead = document.createElement("div");
+  statHead.className = "ef-section";
+  statHead.textContent = "Stats (key · % · total · base · flame · SF)";
+  out.appendChild(statHead);
+  for (const s of p.stats) {
+    const row = document.createElement("div");
+    row.className = "ef-stat";
+    const key = document.createElement("input");
+    key.type = "text";
+    key.className = "ef-key";
+    key.value = s.key;
+    key.oninput = () => (s.key = key.value);
+    const pct = document.createElement("input");
+    pct.type = "checkbox";
+    pct.checked = s.isPercent;
+    pct.title = "percent";
+    pct.oninput = () => (s.isPercent = pct.checked);
+    row.append(
+      key,
+      pct,
+      miniNum(s.breakdown.total, "total", (v) => (s.breakdown.total = v ?? 0)),
+      miniNum(s.breakdown.base, "base", (v) => (s.breakdown.base = v)),
+      miniNum(s.breakdown.flame, "flame", (v) => (s.breakdown.flame = v)),
+      miniNum(s.breakdown.starForce, "SF", (v) => (s.breakdown.starForce = v)),
+    );
+    out.appendChild(row);
+  }
+
+  const potHead = document.createElement("div");
+  potHead.className = "ef-section";
+  potHead.textContent = "Potential lines (text · value · key)";
+  out.appendChild(potHead);
+  for (const line of p.potential.lines) {
+    const row = document.createElement("div");
+    row.className = "ef-pot";
+    const raw = document.createElement("input");
+    raw.type = "text";
+    raw.value = line.raw;
+    raw.oninput = () => (line.raw = raw.value);
+    const val = document.createElement("input");
+    val.type = "text";
+    val.className = "ef-key";
+    val.placeholder = "value";
+    val.value = line.value ?? "";
+    val.oninput = () => (line.value = val.value || undefined);
+    const key = document.createElement("input");
+    key.type = "text";
+    key.className = "ef-key";
+    key.placeholder = "key";
+    key.value = line.key ?? "";
+    key.oninput = () => (line.key = key.value || undefined);
+    row.append(raw, val, key);
+    out.appendChild(row);
+  }
 
   $<HTMLButtonElement>("save").disabled = false;
 }
@@ -347,6 +465,23 @@ function wireUp(): void {
     const file = e.dataTransfer?.files?.[0];
     if (file) handleFile(file);
   };
+
+  // Paste an image from the clipboard (Ctrl+V) -> same extract flow.
+  document.addEventListener("paste", (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleFile(file);
+        }
+        return;
+      }
+    }
+  });
 
   // Save pending extraction to selected character + slot
   $<HTMLButtonElement>("save").onclick = async () => {
