@@ -59,6 +59,29 @@
       .pot .tier { color: #5ac85a; font-weight: 600; }
       .struct dt { color: #9ad; font-size: 12px; margin-top: 6px; }
       .struct dd { margin: 0 0 2px; font-size: 13px; }
+      .char-card { cursor: pointer; }
+      .char-card:hover { border-color: #9ad; }
+      .char-head { display: flex; gap: 8px; align-items: baseline; }
+      .back-btn { margin-bottom: 10px; }
+      .paperdoll { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: 52px; gap: 6px; margin-top: 6px; }
+      .pd-cell { border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; padding: 2px; text-align: center; }
+      .pd-cell.empty { border: 1px dashed #3a3f48; color: #666; }
+      .pd-cell.filled { border: 1.5px solid #3a3f48; background: #22252c; cursor: pointer; }
+      .pd-cell.filled:hover { filter: brightness(1.15); }
+      .pd-label { color: #9aa; font-size: 10px; line-height: 1.1; }
+      .pd-star { color: #e0a93b; font-size: 11px; }
+      .pd-pot { color: #8cf; font-size: 9px; line-height: 1.1; }
+      .pd-summary { border: 0.5px solid #2a2d34; border-radius: 8px; background: #1b1d22; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; text-align: center; }
+      .pd-name { font-weight: 600; font-size: 13px; }
+      .slot-detail { margin-top: 10px; }
+      .slot-detail-head { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #cde; }
+      .ef-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 12px; }
+      .ef-label { width: 92px; color: #9ad; }
+      .ef-row input[type=text], .ef-row input[type=number] { flex: 1; }
+      .ef-section { margin-top: 8px; color: #9ad; font-size: 12px; }
+      .ef-stat, .ef-pot { display: flex; gap: 4px; margin: 2px 0; }
+      .ef-key { width: 84px; }
+      .ef-num { width: 58px; }
       #status { margin: 8px 0; font-size: 13px; color: #9ad; min-height: 18px; }
       .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } }
@@ -75,7 +98,7 @@
     <div class="grid">
       <div>
         <h2>1. Capture equipment</h2>
-        <div id="drop">Drop an equipment screenshot here, or click to choose a file</div>
+        <div id="drop">Drop an equipment screenshot here, click to choose a file, or press Ctrl+V</div>
         <input type="file" id="file" accept="image/*" style="display:none" />
         <div class="row">
           <label for="character">Character:</label>

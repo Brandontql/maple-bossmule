@@ -1,7 +1,7 @@
 import type { TrackerApi } from "../shared/ipc";
-import type { Character, EquipmentData, EquipmentSlot } from "../shared/types";
-import type { StatLine } from "../shared/types";
+import type { Character, EquipmentData, EquipmentEntry, EquipmentSlot, StatLine } from "../shared/types";
 import { computeTotals, computeSetCounts } from "./compute.js";
+import { tierColor, potentialPercents, toNum, SLOT_LAYOUT } from "./inventory.js";
 
 declare global {
   interface Window {
@@ -21,6 +21,11 @@ const $ = <T extends HTMLElement>(id: string): T =>
 
 /** Last extracted result, held until the user assigns it to a slot. */
 let pending: EquipmentData | null = null;
+
+/** When set, the roster shows this character's inventory instead of the list. */
+let selectedCharacterId: string | null = null;
+/** Which slot's detail panel is open in the inventory view. */
+let openSlot: string | null = null;
 
 async function refreshEngines(): Promise<void> {
   const engines = await window.api.listEngines();
@@ -60,15 +65,6 @@ function renderCharacterSelect(characters: Character[]): void {
     opt.textContent = c.job ? `${c.name} (${c.job})` : c.name;
     sel.appendChild(opt);
   }
-}
-
-/** Compact one-line stat summary for a table row, e.g. "INT +107 · MATT +53". */
-function statSummary(stats: StatLine[]): string {
-  return stats
-    .filter((s) => s.key !== "UNKNOWN")
-    .slice(0, 4)
-    .map((s) => `${s.key} ${s.isPercent ? `${s.breakdown.total}%` : `+${s.breakdown.total}`}`)
-    .join(" · ");
 }
 
 /** One Total/Base/Flame/SF row in the detail breakdown table. */
@@ -112,6 +108,14 @@ function detailHtml(data: EquipmentData): string {
   );
 }
 
+/** Title-case a slot id into a label, e.g. "ring1" -> "Ring 1". */
+function slotLabel(slot: string): string {
+  const m = slot.match(/^([a-z]+)(\d*)$/);
+  if (!m) return slot;
+  const base = m[1].charAt(0).toUpperCase() + m[1].slice(1);
+  return m[2] ? `${base} ${m[2]}` : base;
+}
+
 function renderRoster(characters: Character[]): void {
   const root = $<HTMLDivElement>("roster");
   root.innerHTML = "";
@@ -119,84 +123,136 @@ function renderRoster(characters: Character[]): void {
     root.textContent = "No characters yet. Add one above.";
     return;
   }
+  if (selectedCharacterId) {
+    const c = characters.find((x) => x.id === selectedCharacterId);
+    if (c) {
+      renderInventory(root, c);
+      return;
+    }
+    selectedCharacterId = null;
+  }
+  renderRosterList(root, characters);
+}
 
+function renderRosterList(root: HTMLElement, characters: Character[]): void {
   for (const c of characters) {
     const card = document.createElement("div");
-    card.className = "card";
-
-    const title = document.createElement("h3");
-    title.textContent = c.job ? `${c.name} — ${c.job}` : c.name;
-    card.appendChild(title);
-
-    if (c.equipment.length === 0) {
-      const p = document.createElement("p");
-      p.className = "muted";
-      p.textContent = "No equipment captured.";
-      card.appendChild(p);
-      root.appendChild(card);
-      continue;
-    }
-
-    const table = document.createElement("table");
-    table.className = "roster";
-
-    const head = document.createElement("tr");
-    head.innerHTML =
-      `<th>Slot</th><th class="num">★</th><th>Item</th><th>Stats</th><th>Set</th>`;
-    table.appendChild(head);
-
-    for (const entry of c.equipment) {
-      const d = entry.data;
-      const itemRow = document.createElement("tr");
-      itemRow.className = "item";
-      const sf = d.starForce != null ? `<span class="star">${d.starForce}</span>` : "–";
-      const tier = d.potential.tier ? ` <span class="setbadge">[${escapeHtml(d.potential.tier)}]</span>` : "";
-      itemRow.innerHTML =
-        `<td>${escapeHtml(entry.slot)}</td>` +
-        `<td class="num">${sf}</td>` +
-        `<td>${escapeHtml(d.name)}${tier}</td>` +
-        `<td class="muted">${escapeHtml(statSummary(d.stats))}</td>` +
-        `<td class="setbadge">${escapeHtml(d.set ?? "")}</td>`;
-
-      const detailRow = document.createElement("tr");
-      detailRow.className = "detail";
-      detailRow.style.display = "none";
-      detailRow.innerHTML = `<td colspan="5">${detailHtml(d)}</td>`;
-
-      itemRow.onclick = () => {
-        detailRow.style.display = detailRow.style.display === "none" ? "" : "none";
-      };
-
-      table.appendChild(itemRow);
-      table.appendChild(detailRow);
-    }
-
-    const totals = computeTotals(c.equipment);
-    if (totals.length) {
-      const totalsRow = document.createElement("tr");
-      totalsRow.className = "totals";
-      const txt = totals
-        .filter((t) => t.key !== "UNKNOWN")
-        .map((t) => `${t.key} ${t.isPercent ? `${t.total}%` : `+${t.total}`}`)
-        .join(" · ");
-      totalsRow.innerHTML = `<td colspan="3">Totals</td><td colspan="2">${escapeHtml(txt)}</td>`;
-      table.appendChild(totalsRow);
-    }
-
-    card.appendChild(table);
-
-    const sets = computeSetCounts(c.equipment);
-    if (sets.length) {
-      const setLine = document.createElement("div");
-      setLine.className = "setbadge";
-      setLine.style.marginTop = "6px";
-      setLine.textContent =
-        "Sets: " + sets.map((s) => `${s.set} ×${s.count}`).join("  ·  ");
-      card.appendChild(setLine);
-    }
-
+    card.className = "card char-card";
+    const totals = computeTotals(c.equipment)
+      .filter((t) => t.key !== "UNKNOWN")
+      .slice(0, 3)
+      .map((t) => `${t.key} ${t.isPercent ? `${t.total}%` : `+${t.total}`}`)
+      .join(" · ");
+    card.innerHTML =
+      `<div class="char-head"><b>${escapeHtml(c.name)}</b>` +
+      `<span class="muted">${escapeHtml(c.job ?? "")}</span></div>` +
+      `<div class="muted">${c.equipment.length} / 26 geared</div>` +
+      (totals ? `<div class="muted">${escapeHtml(totals)}</div>` : "");
+    card.onclick = () => {
+      selectedCharacterId = c.id;
+      openSlot = null;
+      refreshCharacters();
+    };
     root.appendChild(card);
   }
+}
+
+function slotCell(
+  slot: EquipmentSlot,
+  col: number,
+  row: number,
+  entry: EquipmentEntry | undefined,
+): HTMLElement {
+  const cell = document.createElement("div");
+  cell.style.gridColumn = String(col);
+  cell.style.gridRow = String(row);
+  if (!entry) {
+    cell.className = "pd-cell empty";
+    cell.innerHTML = `<span class="pd-label">${slotLabel(slot)}</span>`;
+    return cell;
+  }
+  const d = entry.data;
+  cell.className = "pd-cell filled";
+  cell.style.borderColor = tierColor(d.potential.tier);
+  const pct = potentialPercents(d);
+  cell.innerHTML =
+    `<span class="pd-label">${slotLabel(slot)}</span>` +
+    `<span class="pd-star">★${d.starForce ?? 0}</span>` +
+    (pct ? `<span class="pd-pot">${escapeHtml(pct)}</span>` : "");
+  cell.onclick = () => showSlotDetail(slot, d);
+  return cell;
+}
+
+function showSlotDetail(slot: string, d: EquipmentData): void {
+  const panel = $<HTMLDivElement>("slotDetail");
+  if (openSlot === slot) {
+    panel.innerHTML = "";
+    openSlot = null;
+    return;
+  }
+  openSlot = slot;
+  panel.innerHTML =
+    `<div class="slot-detail-head">${slotLabel(slot)} — ${escapeHtml(d.name)}</div>` +
+    detailHtml(d);
+}
+
+function renderInventory(root: HTMLElement, c: Character): void {
+  openSlot = null;
+
+  const back = document.createElement("button");
+  back.className = "back-btn";
+  back.textContent = "← Roster";
+  back.onclick = () => {
+    selectedCharacterId = null;
+    refreshCharacters();
+  };
+  root.appendChild(back);
+
+  const title = document.createElement("h3");
+  title.textContent = c.job ? `${c.name} — ${c.job}` : c.name;
+  root.appendChild(title);
+
+  const bySlot = new Map<string, EquipmentEntry>();
+  for (const e of c.equipment) bySlot.set(e.slot, e);
+
+  const grid = document.createElement("div");
+  grid.className = "paperdoll";
+
+  const summary = document.createElement("div");
+  summary.className = "pd-summary";
+  summary.style.gridColumn = "3";
+  summary.style.gridRow = "1 / 6";
+  const totals = computeTotals(c.equipment)
+    .filter((t) => t.key !== "UNKNOWN")
+    .slice(0, 4)
+    .map((t) => `${t.key} ${t.isPercent ? `${t.total}%` : `+${t.total}`}`)
+    .join(" · ");
+  const sets = computeSetCounts(c.equipment)
+    .map((s) => `${s.set} ×${s.count}`)
+    .join(" · ");
+  summary.innerHTML =
+    `<div class="pd-name">${escapeHtml(c.name)}</div>` +
+    `<div class="muted">${c.equipment.length} / 26 geared</div>` +
+    (totals ? `<div class="muted">${escapeHtml(totals)}</div>` : "") +
+    (sets ? `<div class="muted">${escapeHtml(sets)}</div>` : "");
+  grid.appendChild(summary);
+
+  const hasOverall = bySlot.has("overall");
+  for (const pos of SLOT_LAYOUT) {
+    if (hasOverall && (pos.slot === "top" || pos.slot === "bottom")) continue;
+    grid.appendChild(slotCell(pos.slot, pos.col, pos.row, bySlot.get(pos.slot)));
+  }
+  if (hasOverall) {
+    const cell = slotCell("overall", 4, 2, bySlot.get("overall"));
+    cell.style.gridRow = "2 / 4";
+    grid.appendChild(cell);
+  }
+  root.appendChild(grid);
+
+  const detail = document.createElement("div");
+  detail.id = "slotDetail";
+  detail.className = "slot-detail";
+  root.appendChild(detail);
 }
 
 function escapeHtml(s: string): string {
