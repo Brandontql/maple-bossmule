@@ -194,6 +194,23 @@ function showSlotDetail(slot: string, d: EquipmentData): void {
   panel.innerHTML =
     `<div class="slot-detail-head">${slotLabel(slot)} — ${escapeHtml(d.name)}</div>` +
     detailHtml(d);
+  const editBtn = document.createElement("button");
+  editBtn.className = "back-btn";
+  editBtn.textContent = "Edit this item";
+  editBtn.onclick = () => beginEdit(slot, d);
+  panel.appendChild(editBtn);
+}
+
+/** Load a saved item into the editable preview so its values can be corrected
+ *  and re-saved (overwrites that character + slot via the existing Save flow). */
+function beginEdit(slot: string, d: EquipmentData): void {
+  showPending(d);
+  if (selectedCharacterId) {
+    $<HTMLSelectElement>("character").value = selectedCharacterId;
+  }
+  $<HTMLSelectElement>("slot").value = slot;
+  setStatus(`Editing ${slotLabel(slot)} — change values, then click "Save to character".`);
+  $<HTMLDivElement>("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function renderInventory(root: HTMLElement, c: Character): void {
