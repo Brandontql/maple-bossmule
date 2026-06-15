@@ -73,6 +73,10 @@
       .pd-pot { color: #8cf; font-size: 9px; line-height: 1.1; }
       .pd-summary { border: 0.5px solid #2a2d34; border-radius: 8px; background: #1b1d22; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; text-align: center; }
       .pd-name { font-weight: 600; font-size: 13px; }
+      .pd-item { font-size: 9px; color: #cde; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
+      .pd-summary { min-width: 0; overflow: hidden; }
+      .pd-summary .muted { overflow-wrap: anywhere; max-width: 100%; }
+      .ms-row { display: flex; align-items: center; gap: 6px; margin: 4px 0 8px; font-size: 12px; }
       .slot-detail { margin-top: 10px; }
       .slot-detail-head { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #cde; }
       .ef-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 12px; }
@@ -117,6 +121,13 @@
         <div class="row">
           <input type="text" id="charName" placeholder="Character name" />
           <input type="text" id="charJob" placeholder="Job (optional)" />
+          <select id="charMainStat" title="Main stat">
+            <option value="">Main: Auto</option>
+            <option value="STR">STR</option>
+            <option value="DEX">DEX</option>
+            <option value="INT">INT</option>
+            <option value="LUK">LUK</option>
+          </select>
           <button id="addChar">Add</button>
         </div>
         <h2>Roster</h2>

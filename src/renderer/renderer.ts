@@ -2,6 +2,8 @@ import type { TrackerApi } from "../shared/ipc";
 import type { Character, EquipmentData, EquipmentEntry, EquipmentSlot, StatLine } from "../shared/types";
 import { computeTotals, computeSetCounts } from "./compute.js";
 import { tierColor, potentialPercents, toNum, SLOT_LAYOUT } from "./inventory.js";
+import { isRelevantTotal } from "./inventory.js";
+import { effectiveMainStat } from "./jobs.js";
 import { countStars } from "./starcount.js";
 
 declare global {
@@ -139,8 +141,9 @@ function renderRosterList(root: HTMLElement, characters: Character[]): void {
   for (const c of characters) {
     const card = document.createElement("div");
     card.className = "card char-card";
+    const ms = effectiveMainStat(c);
     const totals = computeTotals(c.equipment)
-      .filter((t) => t.key !== "UNKNOWN")
+      .filter((t) => isRelevantTotal(t.key, ms))
       .slice(0, 3)
       .map((t) => `${t.key} ${t.isPercent ? `${t.total}%` : `+${t.total}`}`)
       .join(" · ");
@@ -176,8 +179,10 @@ function slotCell(
   cell.className = "pd-cell filled";
   cell.style.borderColor = tierColor(d.potential.tier);
   const pct = potentialPercents(d);
+  cell.title = d.name;
   cell.innerHTML =
     `<span class="pd-label">${slotLabel(slot)}</span>` +
+    `<span class="pd-item">${escapeHtml(d.name)}</span>` +
     `<span class="pd-star">★${d.starForce ?? 0}</span>` +
     (pct ? `<span class="pd-pot">${escapeHtml(pct)}</span>` : "");
   cell.onclick = () => showSlotDetail(slot, d);
@@ -230,6 +235,36 @@ function renderInventory(root: HTMLElement, c: Character): void {
   title.textContent = c.job ? `${c.name} — ${c.job}` : c.name;
   root.appendChild(title);
 
+  const ms = effectiveMainStat(c);
+  const totals = computeTotals(c.equipment)
+    .filter((t) => isRelevantTotal(t.key, ms))
+    .slice(0, 4)
+    .map((t) => `${t.key} ${t.isPercent ? `${t.total}%` : `+${t.total}`}`)
+    .join(" · ");
+
+  const msRow = document.createElement("div");
+  msRow.className = "ms-row";
+  const msLabel = document.createElement("span");
+  msLabel.className = "muted";
+  msLabel.textContent = "Main stat:";
+  const msSel = document.createElement("select");
+  for (const opt of ["", "STR", "DEX", "INT", "LUK"]) {
+    const o = document.createElement("option");
+    o.value = opt;
+    o.textContent = opt || "Auto";
+    if ((c.mainStat ?? "") === opt) o.selected = true;
+    msSel.appendChild(o);
+  }
+  const msHint = document.createElement("span");
+  msHint.className = "muted";
+  msHint.textContent = `(${ms ?? "all"})`;
+  msSel.onchange = async () => {
+    await window.api.updateCharacter({ characterId: c.id, mainStat: msSel.value || undefined });
+    await refreshCharacters();
+  };
+  msRow.append(msLabel, msSel, msHint);
+  root.appendChild(msRow);
+
   const bySlot = new Map<string, EquipmentEntry>();
   for (const e of c.equipment) bySlot.set(e.slot, e);
 
@@ -240,11 +275,6 @@ function renderInventory(root: HTMLElement, c: Character): void {
   summary.className = "pd-summary";
   summary.style.gridColumn = "3";
   summary.style.gridRow = "1 / 6";
-  const totals = computeTotals(c.equipment)
-    .filter((t) => t.key !== "UNKNOWN")
-    .slice(0, 4)
-    .map((t) => `${t.key} ${t.isPercent ? `${t.total}%` : `+${t.total}`}`)
-    .join(" · ");
   const sets = computeSetCounts(c.equipment)
     .map((s) => `${s.set} ×${s.count}`)
     .join(" · ");
@@ -505,9 +535,14 @@ function wireUp(): void {
     const jobInput = $<HTMLInputElement>("charJob");
     const name = nameInput.value.trim();
     if (!name) return;
-    await window.api.addCharacter({ name, job: jobInput.value.trim() || undefined });
+    await window.api.addCharacter({
+      name,
+      job: jobInput.value.trim() || undefined,
+      mainStat: $<HTMLSelectElement>("charMainStat").value || undefined,
+    });
     nameInput.value = "";
     jobInput.value = "";
+    $<HTMLSelectElement>("charMainStat").value = "";
     await refreshCharacters();
   };
 
