@@ -111,6 +111,8 @@ export interface Character {
   id: string;
   name: string;
   job?: string;
+  /** Overrides the job-inferred main stat (STR/DEX/INT/LUK); absent = infer. */
+  mainStat?: string;
   equipment: EquipmentEntry[];
 }
 
