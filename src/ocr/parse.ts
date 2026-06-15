@@ -36,6 +36,35 @@ function looksLikeGibberish(line: string): boolean {
   return new Set(letters).size <= 4;
 }
 
+/** Positional breakdown from the parenthetical, e.g. "(15 +52 +79)".
+ *  Order is base, star force, flame (color is unavailable to plain OCR). */
+function parseParenBreakdown(line: string): {
+  base?: number;
+  starForce?: number;
+  flame?: number;
+} {
+  const paren = line.match(/\(([^)]*)\)/);
+  if (!paren) return {};
+  const nums = (paren[1].match(/[+-]?\d[\d,]*/g) ?? [])
+    .map((n) => parseInt(n.replace(/,/g, ""), 10))
+    .filter((n) => !Number.isNaN(n));
+  const out: { base?: number; starForce?: number; flame?: number } = {};
+  if (nums[0] != null) out.base = nums[0];
+  if (nums[1] != null) out.starForce = nums[1];
+  if (nums[2] != null) out.flame = nums[2];
+  return out;
+}
+
+/** Strip OCR bullet/colon markers from a potential line for clean display. */
+function cleanPotentialText(line: string): string {
+  return line
+    .replace(POT_MARKER_RE, "")
+    .replace(/^[\s=:•·*-]+/, "")
+    .replace(/:/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Parse the leading number after a stat label, e.g. "+5% (0% +5%)" -> {5,true}. */
 function parseLeadingValue(
   rest: string,
@@ -116,8 +145,7 @@ export function parseTooltipText(text: string): EquipmentData {
     const valIdx = clean.search(/[+\-]?\s*\d/);
 
     if (valIdx < 0) {
-      if (isPotential) potentialLines.push({ raw: line });
-      continue;
+      continue; // no number -> not a real stat/potential line (drops "= = Cape")
     }
 
     const label = clean.slice(0, valIdx).replace(/[:：]/g, "").trim();
@@ -131,7 +159,7 @@ export function parseTooltipText(text: string): EquipmentData {
 
     if (isPotential) {
       potentialLines.push({
-        raw: line,
+        raw: cleanPotentialText(line),
         key: label ? normalizeStatKey(label) : undefined,
         value: rest.replace(/\s+/g, "").replace(/\(.*$/, "") || undefined,
       });
@@ -139,7 +167,7 @@ export function parseTooltipText(text: string): EquipmentData {
       stats.push({
         key: normalizeStatKey(label || line),
         isPercent: parsed.isPercent,
-        breakdown: { total: parsed.total }, // color unavailable -> no base/flame/sf
+        breakdown: { total: parsed.total, ...parseParenBreakdown(line) },
         raw: line,
       });
     }

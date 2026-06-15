@@ -45,12 +45,14 @@ test("Defense is recognized and noise is dropped", () => {
   assert.ok(!d.stats.some((s) => /combat power|currently equipped/i.test(s.raw)));
 });
 
-test("stat totals parse; percent flag set; breakdown sources left empty", () => {
+test("stat totals parse; percent flag set; positional breakdown populated", () => {
   const d = parseTooltipText(NOISY);
   const str = d.stats.find((s) => s.key === "STR")!;
   assert.equal(str.breakdown.total, 145);
   assert.equal(str.isPercent, false);
-  assert.equal(str.breakdown.flame, undefined); // color unavailable to Tesseract
+  assert.equal(str.breakdown.base, 15);     // positional from "(15+52+79)"
+  assert.equal(str.breakdown.starForce, 52);
+  assert.equal(str.breakdown.flame, 79);    // positional; color not needed
   const all = d.stats.find((s) => s.key === "ALL_STAT")!;
   assert.equal(all.isPercent, true);
   assert.equal(all.breakdown.total, 5);
@@ -72,4 +74,34 @@ test("name skips low-diversity gibberish (preprocessed star row)", () => {
   // The preprocessed star row OCRs to mixed-case gibberish with few distinct letters.
   const input = ["Ahhh h Ahhh h Ahh hd", "AbsoLab Mage Cape", "STR +100 (100)"].join("\n");
   assert.equal(parseTooltipText(input).name, "AbsoLab Mage Cape");
+});
+
+test("base stat lines get positional base/SF/flame from the parenthetical", () => {
+  const d = parseTooltipText("STR +146 (15 +52 +79)");
+  const s = d.stats.find((x) => x.key === "STR")!;
+  assert.equal(s.breakdown.total, 146);
+  assert.equal(s.breakdown.base, 15);
+  assert.equal(s.breakdown.starForce, 52);
+  assert.equal(s.breakdown.flame, 79);
+});
+
+test("two-number parenthetical fills base + SF (flame undefined)", () => {
+  const d = parseTooltipText("INT +107 (15 +92)");
+  const s = d.stats.find((x) => x.key === "INT")!;
+  assert.equal(s.breakdown.base, 15);
+  assert.equal(s.breakdown.starForce, 92);
+  assert.equal(s.breakdown.flame, undefined);
+});
+
+test("potential lines are cleaned of markers and junk is dropped", () => {
+  const input = [
+    "Potential : Legendary",
+    "= = Cape",
+    "= INT: +13%",
+    "= INT: +10%",
+  ].join("\n");
+  const d = parseTooltipText(input);
+  assert.equal(d.potential.lines.length, 2); // junk "= = Cape" dropped
+  assert.equal(d.potential.lines[0].raw, "INT +13%"); // no '=' or ':'
+  assert.equal(d.potential.lines[0].value, "+13%");
 });
