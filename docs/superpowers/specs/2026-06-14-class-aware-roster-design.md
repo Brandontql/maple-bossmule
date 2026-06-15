@@ -21,6 +21,7 @@ All renderer-side except a small `Character.mainStat` field (+ store/IPC to pers
 3. **Item name in each slot cell** — see what's equipped at a glance.
 4. **Fix the center summary overflow.**
 5. **Best-effort positional breakdown** — Tesseract fills base/SF/flame from the parenthetical numbers (editable).
+6. **Clean potential lines** — strip OCR markers/symbols (`=`, `:`, leading `•`) and drop symbol-only junk lines, so potential reads cleanly (e.g. `INT +13%`).
 
 ## 3. Non-goals
 
@@ -70,6 +71,18 @@ All renderer-side except a small `Character.mainStat` field (+ store/IPC to pers
   - 1 / none → base only (or leave breakdown to just `total`).
 - New helper `parseParenBreakdown(line): { base?; starForce?; flame? }` used in the stat-line path; merged into the existing `breakdown` (which keeps `total`). Best-effort and editable — the order may mislabel some 2-number lines.
 
+## 8b. Clean potential lines (parse.ts)
+
+The potential path currently keeps the raw OCR line, including the bullet OCR'd as `=`
+and junk fragments (e.g. `"= = Cape"`). Clean it:
+- **Strip** the leading marker and any stray leading symbols (`=`, `:`, `•`, `·`, `*`,
+  spaces), and collapse internal whitespace, before storing `raw`. So `"= INT: +13%"` →
+  `"INT +13%"`.
+- **Drop** potential entries that contain **no digit** after cleaning (pure-symbol junk
+  like `"= = Cape"` is discarded rather than stored).
+- `value` stays the `%` token (e.g. `"+13%"`); `key` stays the normalized key. (Word-level
+  OCR typos inside a line, e.g. "Efiiency", are left as-is — editable.)
+
 ## 9. Affected files
 
 - `src/renderer/jobs.ts` — **new**: `jobToMainStat`, `effectiveMainStat`.
@@ -89,6 +102,7 @@ All renderer-side except a small `Character.mainStat` field (+ store/IPC to pers
   - `jobToMainStat` (mage→INT, bishop→INT, hero→STR, marksman→DEX, shadower→LUK, "" → undefined); `effectiveMainStat` (override wins; infer from job; undefined for an unrecognized job + no override).
   - `isRelevantTotal` (mage hides STR/DEX/LUK + MAX_MP + UNKNOWN; keeps INT, MATT, BOSS_DMG, DEF, ALL_STAT; undefined mainStat → keeps all real stats).
   - `parseParenBreakdown` ("(15 +52 +79)" → base15/sf52/flame79; "(15 +92)" → base15/sf92; "(250 +395)" → base250/sf395; no parens → empty).
+  - Potential cleaning: a tooltip with `"= INT: +13%"` and a junk `"= = Cape"` line yields a potential line `raw: "INT +13%"` (no `=`/`:`) and **no** junk entry; potential line count excludes the symbol-only line.
 - **Build:** typecheck + build green; renderer value imports keep `.js`.
 - **Manual:** add a "Mage" → main stat auto INT; inventory totals show INT/MATT/BOSS/DEF, hide STR/DEX/LUK; override to STR → updates + persists; slot cells show item names (truncated, hover for full); summary no longer overflows; a Tesseract capture fills base/SF/flame positionally (editable).
 
