@@ -12,10 +12,14 @@ export function tierColor(tier: string | undefined): string {
   }
 }
 
-/** Compact "+13% +10%" of percent tokens in an item's potential lines; "" if none. */
-export function potentialPercents(data: EquipmentData): string {
+/** Compact "+13% +10%" of percent tokens in an item's potential lines; "" if none.
+ *  When `mainStat` is given, off-main base-stat lines are dropped (a mage's stray
+ *  STR/DEX/LUK potentials), keeping main-stat + universal lines (cooldown, crit,
+ *  boss, etc.). */
+export function potentialPercents(data: EquipmentData, mainStat?: string): string {
   const out: string[] = [];
   for (const line of data.potential.lines) {
+    if (!isRelevantPotential(line.key, mainStat)) continue;
     const src = line.value ?? line.raw ?? "";
     const m = src.match(/[+-]?\d+%/);
     if (!m) continue;
@@ -60,5 +64,15 @@ export function isRelevantTotal(key: string, mainStat: string | undefined): bool
   if (key === "UNKNOWN" || key === "MAX_MP") return false;
   if (!mainStat) return true;
   if (PRIMARY_STATS.has(key) && key !== mainStat) return false;
+  return true;
+}
+
+/** Whether a potential line belongs in the filtered roster view. Hides off-main
+ *  base-stat potentials (a mage's STR/DEX/LUK%) but KEEPS everything else —
+ *  including main stat, cooldown/crit/boss and unrecognized (UNKNOWN) lines like
+ *  "Cooldown Reduction" — since those matter regardless of class. */
+export function isRelevantPotential(key: string | undefined, mainStat: string | undefined): boolean {
+  if (!mainStat) return true;
+  if (key && PRIMARY_STATS.has(key) && key !== mainStat) return false;
   return true;
 }

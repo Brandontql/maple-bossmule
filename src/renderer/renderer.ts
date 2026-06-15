@@ -2,7 +2,7 @@ import type { TrackerApi } from "../shared/ipc";
 import type { Character, EquipmentData, EquipmentEntry, EquipmentSlot, StatLine } from "../shared/types";
 import { computeTotals, computeSetCounts } from "./compute.js";
 import { tierColor, potentialPercents, toNum, SLOT_LAYOUT } from "./inventory.js";
-import { isRelevantTotal } from "./inventory.js";
+import { isRelevantTotal, isRelevantPotential } from "./inventory.js";
 import { effectiveMainStat } from "./jobs.js";
 import { countStars } from "./starcount.js";
 
@@ -84,8 +84,9 @@ function breakdownRow(s: StatLine): string {
   );
 }
 
-/** The expandable detail panel for one equipment entry. */
-function detailHtml(data: EquipmentData): string {
+/** The expandable detail panel for one equipment entry. Potential lines are
+ *  filtered to the character's relevant ones (off-main base stats hidden). */
+function detailHtml(data: EquipmentData, mainStat: string | undefined): string {
   const meta = [
     data.category,
     data.requiredJob,
@@ -99,9 +100,10 @@ function detailHtml(data: EquipmentData): string {
     ? `<table class="bd"><tr><th>Stat</th><th class="num">Total</th>` +
       `<th class="num">Base</th><th class="num star">SF</th><th class="num flame">Flame</th></tr>${rows}</table>`
     : "";
-  const pot = data.potential.lines.length
+  const potLines = data.potential.lines.filter((p) => isRelevantPotential(p.key, mainStat));
+  const pot = potLines.length
     ? `<div class="pot">${data.potential.tier ? `<span class="tier">${escapeHtml(data.potential.tier)}</span> ` : ""}` +
-      data.potential.lines.map((p) => escapeHtml(p.raw)).join("<br>") +
+      potLines.map((p) => escapeHtml(p.raw)).join("<br>") +
       `</div>`
     : "";
   return (
@@ -168,6 +170,7 @@ function slotCell(
   col: number,
   row: number,
   entry: EquipmentEntry | undefined,
+  mainStat: string | undefined,
 ): HTMLElement {
   const cell = document.createElement("div");
   cell.style.gridColumn = String(col);
@@ -180,18 +183,18 @@ function slotCell(
   const d = entry.data;
   cell.className = "pd-cell filled";
   cell.style.borderColor = tierColor(d.potential.tier);
-  const pct = potentialPercents(d);
+  const pct = potentialPercents(d, mainStat);
   cell.title = d.name;
   cell.innerHTML =
     `<span class="pd-label">${slotLabel(slot)}</span>` +
     `<span class="pd-item">${escapeHtml(d.name)}</span>` +
     `<span class="pd-star">★${d.starForce ?? 0}</span>` +
     (pct ? `<span class="pd-pot">${escapeHtml(pct)}</span>` : "");
-  cell.onclick = () => showSlotDetail(slot, d);
+  cell.onclick = () => showSlotDetail(slot, d, mainStat);
   return cell;
 }
 
-function showSlotDetail(slot: string, d: EquipmentData): void {
+function showSlotDetail(slot: string, d: EquipmentData, mainStat: string | undefined): void {
   const panel = $<HTMLDivElement>("slotDetail");
   if (openSlot === slot) {
     panel.innerHTML = "";
@@ -201,7 +204,7 @@ function showSlotDetail(slot: string, d: EquipmentData): void {
   openSlot = slot;
   panel.innerHTML =
     `<div class="slot-detail-head">${slotLabel(slot)} — ${escapeHtml(d.name)}</div>` +
-    detailHtml(d);
+    detailHtml(d, mainStat);
   const editBtn = document.createElement("button");
   editBtn.className = "back-btn";
   editBtn.textContent = "Edit this item";
@@ -290,10 +293,10 @@ function renderInventory(root: HTMLElement, c: Character): void {
   const hasOverall = bySlot.has("overall");
   for (const pos of SLOT_LAYOUT) {
     if (hasOverall && (pos.slot === "top" || pos.slot === "bottom")) continue;
-    grid.appendChild(slotCell(pos.slot, pos.col, pos.row, bySlot.get(pos.slot)));
+    grid.appendChild(slotCell(pos.slot, pos.col, pos.row, bySlot.get(pos.slot), ms));
   }
   if (hasOverall) {
-    const cell = slotCell("overall", 4, 2, bySlot.get("overall"));
+    const cell = slotCell("overall", 4, 2, bySlot.get("overall"), ms);
     cell.style.gridRow = "2 / 4";
     grid.appendChild(cell);
   }
