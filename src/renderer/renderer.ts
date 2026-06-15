@@ -61,6 +61,7 @@ async function refreshCharacters(): Promise<void> {
 
 function renderCharacterSelect(characters: Character[]): void {
   const sel = $<HTMLSelectElement>("character");
+  const prev = sel.value; // preserve the chosen character across re-renders
   sel.innerHTML = "";
   for (const c of characters) {
     const opt = document.createElement("option");
@@ -68,9 +69,10 @@ function renderCharacterSelect(characters: Character[]): void {
     opt.textContent = c.job ? `${c.name} (${c.job})` : c.name;
     sel.appendChild(opt);
   }
+  if (prev && characters.some((c) => c.id === prev)) sel.value = prev;
 }
 
-/** One Total/Base/Flame/SF row in the detail breakdown table. */
+/** One Total/Base/SF/Flame row in the detail breakdown table. */
 function breakdownRow(s: StatLine): string {
   const b = s.breakdown;
   const cell = (n: number | undefined, cls = "") =>
@@ -78,7 +80,7 @@ function breakdownRow(s: StatLine): string {
   const total = s.isPercent ? `${b.total}%` : `+${b.total}`;
   return (
     `<tr><td>${escapeHtml(s.key)}</td><td class="num">${total}</td>` +
-    `${cell(b.base)}${cell(b.flame, "flame")}${cell(b.starForce, "star")}</tr>`
+    `${cell(b.base)}${cell(b.starForce, "star")}${cell(b.flame, "flame")}</tr>`
   );
 }
 
@@ -95,7 +97,7 @@ function detailHtml(data: EquipmentData): string {
   const rows = data.stats.map(breakdownRow).join("");
   const table = rows
     ? `<table class="bd"><tr><th>Stat</th><th class="num">Total</th>` +
-      `<th class="num">Base</th><th class="num flame">Flame</th><th class="num star">SF</th></tr>${rows}</table>`
+      `<th class="num">Base</th><th class="num star">SF</th><th class="num flame">Flame</th></tr>${rows}</table>`
     : "";
   const pot = data.potential.lines.length
     ? `<div class="pot">${data.potential.tier ? `<span class="tier">${escapeHtml(data.potential.tier)}</span> ` : ""}` +
