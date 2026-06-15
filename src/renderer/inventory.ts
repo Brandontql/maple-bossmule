@@ -50,3 +50,15 @@ export const SLOT_LAYOUT: { slot: EquipmentSlot; col: number; row: number }[] = 
   { slot: "shoes", col: 5, row: 3 }, { slot: "medal", col: 5, row: 4 },
   { slot: "heart", col: 5, row: 5 }, { slot: "badge", col: 5, row: 6 },
 ];
+
+const PRIMARY_STATS = new Set(["STR", "DEX", "INT", "LUK"]);
+
+/** Whether a stat key belongs in the filtered roster totals for a character whose
+ *  main stat is `mainStat`. Hides off-main base stats (and MP/UNKNOWN); an
+ *  undefined main stat (unknown class) keeps all real stats. */
+export function isRelevantTotal(key: string, mainStat: string | undefined): boolean {
+  if (key === "UNKNOWN" || key === "MAX_MP") return false;
+  if (!mainStat) return true;
+  if (PRIMARY_STATS.has(key) && key !== mainStat) return false;
+  return true;
+}

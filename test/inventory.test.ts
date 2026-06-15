@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tierColor, potentialPercents, toNum, SLOT_LAYOUT } from "../src/renderer/inventory";
+import { tierColor, potentialPercents, toNum, SLOT_LAYOUT, isRelevantTotal } from "../src/renderer/inventory";
 import type { EquipmentData } from "../src/shared/types";
 
 test("tierColor maps tiers (MapleStory scheme); unknown -> neutral", () => {
@@ -41,4 +41,25 @@ test("SLOT_LAYOUT has 25 placed slots, each unique, none is 'overall'", () => {
   const slots = SLOT_LAYOUT.map((p) => p.slot);
   assert.equal(new Set(slots).size, 25);
   assert.ok(!slots.includes("overall"));
+});
+
+test("isRelevantTotal hides off-main base stats, keeps power stats", () => {
+  assert.equal(isRelevantTotal("INT", "INT"), true);
+  assert.equal(isRelevantTotal("STR", "INT"), false);
+  assert.equal(isRelevantTotal("DEX", "INT"), false);
+  assert.equal(isRelevantTotal("LUK", "INT"), false);
+  assert.equal(isRelevantTotal("MATT", "INT"), true);
+  assert.equal(isRelevantTotal("BOSS_DMG", "INT"), true);
+  assert.equal(isRelevantTotal("IED", "INT"), true);
+  assert.equal(isRelevantTotal("DEF", "INT"), true);
+  assert.equal(isRelevantTotal("ALL_STAT", "INT"), true);
+  assert.equal(isRelevantTotal("MAX_MP", "INT"), false);
+  assert.equal(isRelevantTotal("UNKNOWN", "INT"), false);
+});
+
+test("isRelevantTotal with unknown main stat keeps all real stats", () => {
+  assert.equal(isRelevantTotal("STR", undefined), true);
+  assert.equal(isRelevantTotal("INT", undefined), true);
+  assert.equal(isRelevantTotal("UNKNOWN", undefined), false);
+  assert.equal(isRelevantTotal("MAX_MP", undefined), false);
 });
