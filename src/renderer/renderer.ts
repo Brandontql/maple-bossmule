@@ -2,7 +2,7 @@ import type { TrackerApi } from "../shared/ipc";
 import type { Character, EquipmentData, EquipmentEntry, EquipmentSlot, StatLine } from "../shared/types";
 import { computeTotals, computeSetCounts } from "./compute.js";
 import { tierColor, potentialPercents, toNum, SLOT_LAYOUT } from "./inventory.js";
-import { isRelevantTotal, isRelevantPotential } from "./inventory.js";
+import { isRelevantTotal } from "./inventory.js";
 import { effectiveMainStat } from "./jobs.js";
 import { countStars } from "./starcount.js";
 
@@ -84,9 +84,10 @@ function breakdownRow(s: StatLine): string {
   );
 }
 
-/** The expandable detail panel for one equipment entry. Potential lines are
- *  filtered to the character's relevant ones (off-main base stats hidden). */
-function detailHtml(data: EquipmentData, mainStat: string | undefined): string {
+/** The expandable detail panel for one equipment entry. Shows the FULL item —
+ *  every stat and every potential line, unfiltered — since the click-through is
+ *  for inspecting the real equipment (the box summary is the filtered view). */
+function detailHtml(data: EquipmentData): string {
   const meta = [
     data.category,
     data.requiredJob,
@@ -100,10 +101,9 @@ function detailHtml(data: EquipmentData, mainStat: string | undefined): string {
     ? `<table class="bd"><tr><th>Stat</th><th class="num">Total</th>` +
       `<th class="num">Base</th><th class="num star">SF</th><th class="num flame">Flame</th></tr>${rows}</table>`
     : "";
-  const potLines = data.potential.lines.filter((p) => isRelevantPotential(p.key, mainStat));
-  const pot = potLines.length
+  const pot = data.potential.lines.length
     ? `<div class="pot">${data.potential.tier ? `<span class="tier">${escapeHtml(data.potential.tier)}</span> ` : ""}` +
-      potLines.map((p) => escapeHtml(p.raw)).join("<br>") +
+      data.potential.lines.map((p) => escapeHtml(p.raw)).join("<br>") +
       `</div>`
     : "";
   return (
@@ -190,11 +190,11 @@ function slotCell(
     `<span class="pd-item">${escapeHtml(d.name)}</span>` +
     `<span class="pd-star">★${d.starForce ?? 0}</span>` +
     (pct ? `<span class="pd-pot">${escapeHtml(pct)}</span>` : "");
-  cell.onclick = () => showSlotDetail(slot, d, mainStat);
+  cell.onclick = () => showSlotDetail(slot, d);
   return cell;
 }
 
-function showSlotDetail(slot: string, d: EquipmentData, mainStat: string | undefined): void {
+function showSlotDetail(slot: string, d: EquipmentData): void {
   const panel = $<HTMLDivElement>("slotDetail");
   if (openSlot === slot) {
     panel.innerHTML = "";
@@ -204,7 +204,7 @@ function showSlotDetail(slot: string, d: EquipmentData, mainStat: string | undef
   openSlot = slot;
   panel.innerHTML =
     `<div class="slot-detail-head">${slotLabel(slot)} — ${escapeHtml(d.name)}</div>` +
-    detailHtml(d, mainStat);
+    detailHtml(d);
   const editBtn = document.createElement("button");
   editBtn.className = "back-btn";
   editBtn.textContent = "Edit this item";
@@ -407,7 +407,7 @@ function showPending(data: EquipmentData): void {
 
   const statHead = document.createElement("div");
   statHead.className = "ef-section";
-  statHead.textContent = "Stats (key · % · total · base · flame · SF)";
+  statHead.textContent = "Stats (key · % · total · base · SF · flame)";
   out.appendChild(statHead);
   for (const s of p.stats) {
     const row = document.createElement("div");
@@ -427,8 +427,8 @@ function showPending(data: EquipmentData): void {
       pct,
       miniNum(s.breakdown.total, "total", (v) => (s.breakdown.total = v ?? 0)),
       miniNum(s.breakdown.base, "base", (v) => (s.breakdown.base = v)),
-      miniNum(s.breakdown.flame, "flame", (v) => (s.breakdown.flame = v)),
       miniNum(s.breakdown.starForce, "SF", (v) => (s.breakdown.starForce = v)),
+      miniNum(s.breakdown.flame, "flame", (v) => (s.breakdown.flame = v)),
     );
     out.appendChild(row);
   }
