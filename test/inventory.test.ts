@@ -64,11 +64,15 @@ test("isRelevantTotal with unknown main stat keeps all real stats", () => {
   assert.equal(isRelevantTotal("MAX_MP", undefined), false);
 });
 
-test("isRelevantPotential hides off-main base stats, keeps everything else", () => {
+test("isRelevantPotential hides off-main base stats + defensive junk, keeps the rest", () => {
   // Off-main base stats dropped for a mage.
   assert.equal(isRelevantPotential("STR", "INT"), false);
   assert.equal(isRelevantPotential("DEX", "INT"), false);
   assert.equal(isRelevantPotential("LUK", "INT"), false);
+  // Defensive junk dropped regardless of class.
+  assert.equal(isRelevantPotential("DEF", "INT"), false);
+  assert.equal(isRelevantPotential("MAX_HP", "INT"), false);
+  assert.equal(isRelevantPotential("MAX_MP", "INT"), false);
   // Main stat kept.
   assert.equal(isRelevantPotential("INT", "INT"), true);
   // Universal power stats kept regardless of class.
@@ -81,10 +85,12 @@ test("isRelevantPotential hides off-main base stats, keeps everything else", () 
   assert.equal(isRelevantPotential("UNKNOWN", "INT"), true);
 });
 
-test("isRelevantPotential with unknown main stat keeps all lines", () => {
+test("isRelevantPotential with unknown main stat keeps all but defensive junk", () => {
   assert.equal(isRelevantPotential("STR", undefined), true);
   assert.equal(isRelevantPotential("INT", undefined), true);
   assert.equal(isRelevantPotential(undefined, undefined), true);
+  // Defensive junk stays hidden even when the class is unknown.
+  assert.equal(isRelevantPotential("DEF", undefined), false);
 });
 
 test("potentialPercents drops off-main base-stat lines when mainStat is given", () => {

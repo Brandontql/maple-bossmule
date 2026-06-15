@@ -67,11 +67,17 @@ export function isRelevantTotal(key: string, mainStat: string | undefined): bool
   return true;
 }
 
-/** Whether a potential line belongs in the filtered roster view. Hides off-main
- *  base-stat potentials (a mage's STR/DEX/LUK%) but KEEPS everything else —
- *  including main stat, cooldown/crit/boss and unrecognized (UNKNOWN) lines like
- *  "Cooldown Reduction" — since those matter regardless of class. */
+/** Potential keys never worth showing in the roster summary, regardless of
+ *  class — defensive junk that clutters the box. Add/remove keys here to tune
+ *  the box-summary filter; the full key vocabulary lives in ocr/normalize.ts. */
+const HIDDEN_POTENTIAL = new Set(["DEF", "MAX_HP", "MAX_MP"]);
+
+/** Whether a potential line belongs in the filtered roster view. Hides always-
+ *  junk lines (DEF%/HP/MP) and off-main base-stat potentials (a mage's
+ *  STR/DEX/LUK%) but KEEPS everything else — main stat, cooldown/crit/boss and
+ *  unrecognized (UNKNOWN) lines like "Cooldown Reduction". */
 export function isRelevantPotential(key: string | undefined, mainStat: string | undefined): boolean {
+  if (key && HIDDEN_POTENTIAL.has(key)) return false;
   if (!mainStat) return true;
   if (key && PRIMARY_STATS.has(key) && key !== mainStat) return false;
   return true;
