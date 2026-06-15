@@ -10,6 +10,7 @@ import type {
   AddCharacterRequest,
   AddEquipmentRequest,
   ExtractRequest,
+  UpdateCharacterRequest,
 } from "../shared/ipc";
 import type { EquipmentEntry } from "../shared/types";
 
@@ -29,7 +30,11 @@ export function registerIpc(store: Store): void {
   ipcMain.handle(Channels.getCharacters, () => store.getCharacters());
 
   ipcMain.handle(Channels.addCharacter, (_evt, req: AddCharacterRequest) =>
-    store.addCharacter(req.name, req.job),
+    store.addCharacter(req.name, req.job, req.mainStat),
+  );
+
+  ipcMain.handle(Channels.updateCharacter, (_evt, req: UpdateCharacterRequest) =>
+    store.updateCharacter(req.characterId, req.mainStat),
   );
 
   ipcMain.handle(Channels.addEquipment, (_evt, req: AddEquipmentRequest) => {

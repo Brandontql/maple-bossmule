@@ -74,15 +74,27 @@ export class Store {
     return this.state.characters;
   }
 
-  async addCharacter(name: string, job?: string): Promise<Character> {
+  async addCharacter(name: string, job?: string, mainStat?: string): Promise<Character> {
     await this.ensureLoaded();
     const character: Character = {
       id: randomUUID(),
       name,
       job,
+      mainStat,
       equipment: [],
     };
     this.state.characters.push(character);
+    await this.save();
+    return character;
+  }
+
+  async updateCharacter(characterId: string, mainStat: string | undefined): Promise<Character> {
+    await this.ensureLoaded();
+    const character = this.state.characters.find((c) => c.id === characterId);
+    if (!character) {
+      throw new Error(`Character not found: ${characterId}`);
+    }
+    character.mainStat = mainStat;
     await this.save();
     return character;
   }

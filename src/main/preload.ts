@@ -5,6 +5,7 @@ import type {
   AddEquipmentRequest,
   ExtractRequest,
   TrackerApi,
+  UpdateCharacterRequest,
 } from "../shared/ipc";
 
 const api: TrackerApi = {
@@ -14,6 +15,8 @@ const api: TrackerApi = {
   getCharacters: () => ipcRenderer.invoke(Channels.getCharacters),
   addCharacter: (req: AddCharacterRequest) =>
     ipcRenderer.invoke(Channels.addCharacter, req),
+  updateCharacter: (req: UpdateCharacterRequest) =>
+    ipcRenderer.invoke(Channels.updateCharacter, req),
   addEquipment: (req: AddEquipmentRequest) =>
     ipcRenderer.invoke(Channels.addEquipment, req),
 };

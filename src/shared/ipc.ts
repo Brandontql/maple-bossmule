@@ -16,6 +16,7 @@ export const enum Channels {
   extract = "ocr:extract",
   getCharacters = "store:getCharacters",
   addCharacter = "store:addCharacter",
+  updateCharacter = "store:updateCharacter",
   addEquipment = "store:addEquipment",
 }
 
@@ -28,6 +29,12 @@ export interface ExtractRequest {
 export interface AddCharacterRequest {
   name: string;
   job?: string;
+  mainStat?: string;
+}
+
+export interface UpdateCharacterRequest {
+  characterId: string;
+  mainStat?: string;
 }
 
 export interface AddEquipmentRequest {
@@ -43,5 +50,6 @@ export interface TrackerApi {
   extract(req: ExtractRequest): Promise<EquipmentData>;
   getCharacters(): Promise<Character[]>;
   addCharacter(req: AddCharacterRequest): Promise<Character>;
+  updateCharacter(req: UpdateCharacterRequest): Promise<Character>;
   addEquipment(req: AddEquipmentRequest): Promise<Character>;
 }
