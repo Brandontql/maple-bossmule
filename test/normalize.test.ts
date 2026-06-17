@@ -32,6 +32,16 @@ test("normalizeStatKey maps IED before DEF (label contains 'DEF')", () => {
   assert.equal(normalizeStatKey("IED"), "IED");
 });
 
+test("normalizeStatKey requires 'max' for HP/MP so utility lines aren't mis-keyed", () => {
+  // "HP Recovery ... Skills Efficiency" must NOT be keyed as MAX_HP (else the
+  // roster summary blocklist would hide a real utility potential line).
+  assert.equal(normalizeStatKey("HP Recovery Items and Skills Efficiency"), "UNKNOWN");
+  assert.equal(normalizeStatKey("MP Cost"), "UNKNOWN");
+  // Genuine Max HP/MP lines still map.
+  assert.equal(normalizeStatKey("Max HP"), "MAX_HP");
+  assert.equal(normalizeStatKey("Max MP"), "MAX_MP");
+});
+
 test("normalizeStatKey returns UNKNOWN for unrecognized labels", () => {
   assert.equal(normalizeStatKey("Combat Power"), "UNKNOWN");
   assert.equal(normalizeStatKey(""), "UNKNOWN");

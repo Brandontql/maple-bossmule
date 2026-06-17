@@ -19,8 +19,10 @@ export function normalizeStatKey(label: string): string {
   if (/boss/.test(l)) return "BOSS_DMG";
   if (/crit.*dmg|critical\s*damage/.test(l)) return "CRIT_DMG";
   if (/crit/.test(l)) return "CRIT_RATE";
-  if (/max\s*hp|\bhp\b/.test(l)) return "MAX_HP";
-  if (/max\s*mp|\bmp\b/.test(l)) return "MAX_MP";
+  // Require "max" so utility lines like "HP Recovery Items and Skills
+  // Efficiency" or "MP Cost" are NOT mis-keyed as the raw HP/MP stat.
+  if (/max\s*hp/.test(l)) return "MAX_HP";
+  if (/max\s*mp/.test(l)) return "MAX_MP";
   if (/damage|dmg/.test(l)) return "DMG";
   return "UNKNOWN";
 }
